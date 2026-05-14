@@ -1,10 +1,61 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { clearAdminSession, getAdminSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
+
+const vehicleAdminSelect = {
+  id: true,
+  plate: true,
+  driverCc: true,
+  model: true,
+  company: true,
+  createdAt: true,
+  _count: {
+    select: {
+      maintenances: true,
+    },
+  },
+  maintenances: {
+    where: {
+      status: { not: "DONE" },
+    },
+    orderBy: {
+      dueDate: "asc",
+    },
+    take: 1,
+    select: {
+      title: true,
+      dueDate: true,
+    },
+  },
+} satisfies Prisma.VehicleSelect;
+
+const maintenanceAdminSelect = {
+  id: true,
+  title: true,
+  dueDate: true,
+  dueKm: true,
+  description: true,
+  status: true,
+  vehicleId: true,
+  vehicle: {
+    select: {
+      plate: true,
+    },
+  },
+} satisfies Prisma.MaintenanceSelect;
+
+type VehicleAdminRow = Prisma.VehicleGetPayload<{
+  select: typeof vehicleAdminSelect;
+}>;
+
+type MaintenanceAdminRow = Prisma.MaintenanceGetPayload<{
+  select: typeof maintenanceAdminSelect;
+}>;
 
 function toInputDate(date: Date) {
   return new Date(date).toISOString().slice(0, 10);
@@ -198,61 +249,19 @@ export default async function AdminPage({ searchParams }: AdminProps) {
 
   const params = await searchParams;
 
-  let vehicles: Awaited<
-    ReturnType<typeof prisma.vehicle.findMany>
-  > = [];
-  let maintenances: Awaited<
-    ReturnType<typeof prisma.maintenance.findMany>
-  > = [];
+  let vehicles: VehicleAdminRow[] = [];
+  let maintenances: MaintenanceAdminRow[] = [];
   let dbUnavailable = false;
 
   try {
     [vehicles, maintenances] = await Promise.all([
       prisma.vehicle.findMany({
         orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          plate: true,
-          driverCc: true,
-          model: true,
-          company: true,
-          createdAt: true,
-          _count: {
-            select: {
-              maintenances: true,
-            },
-          },
-          maintenances: {
-            where: {
-              status: { not: "DONE" },
-            },
-            orderBy: {
-              dueDate: "asc",
-            },
-            take: 1,
-            select: {
-              title: true,
-              dueDate: true,
-            },
-          },
-        },
+        select: vehicleAdminSelect,
       }),
       prisma.maintenance.findMany({
         orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
-        select: {
-          id: true,
-          title: true,
-          dueDate: true,
-          dueKm: true,
-          description: true,
-          status: true,
-          vehicleId: true,
-          vehicle: {
-            select: {
-              plate: true,
-            },
-          },
-        },
+        select: maintenanceAdminSelect,
       }),
     ]);
   } catch {
