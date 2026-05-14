@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { clearAdminSession, getAdminSession } from "@/lib/auth";
 
@@ -32,7 +31,7 @@ const vehicleAdminSelect = {
       dueDate: true,
     },
   },
-} satisfies Prisma.VehicleSelect;
+} as const;
 
 const maintenanceAdminSelect = {
   id: true,
@@ -47,15 +46,36 @@ const maintenanceAdminSelect = {
       plate: true,
     },
   },
-} satisfies Prisma.MaintenanceSelect;
+} as const;
 
-type VehicleAdminRow = Prisma.VehicleGetPayload<{
-  select: typeof vehicleAdminSelect;
-}>;
+type VehicleAdminRow = {
+  id: string;
+  plate: string;
+  driverCc: string;
+  model: string;
+  company: string | null;
+  createdAt: Date;
+  _count: {
+    maintenances: number;
+  };
+  maintenances: Array<{
+    title: string;
+    dueDate: Date;
+  }>;
+};
 
-type MaintenanceAdminRow = Prisma.MaintenanceGetPayload<{
-  select: typeof maintenanceAdminSelect;
-}>;
+type MaintenanceAdminRow = {
+  id: string;
+  title: string;
+  dueDate: Date;
+  dueKm: number | null;
+  description: string | null;
+  status: "PENDING" | "SENT" | "DONE";
+  vehicleId: string;
+  vehicle: {
+    plate: string;
+  };
+};
 
 function toInputDate(date: Date) {
   return new Date(date).toISOString().slice(0, 10);
