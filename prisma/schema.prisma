@@ -1,0 +1,51 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AlertStatus {
+  PENDING
+  SENT
+  DONE
+}
+
+model Vehicle {
+  id           String        @id @default(cuid())
+  plate        String        @unique
+  driverCc     String
+  model        String
+  company      String?
+  currentKm    Int?
+  maintenances Maintenance[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([plate])
+  @@index([plate, driverCc])
+}
+
+model Maintenance {
+  id          String      @id @default(cuid())
+  vehicleId   String
+  title       String
+  description String?
+  dueDate     DateTime
+  dueKm       Int?
+  status      AlertStatus @default(PENDING)
+  notified    Boolean     @default(false)
+  completedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  vehicle     Vehicle     @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
+  @@index([dueDate, status])
+}
