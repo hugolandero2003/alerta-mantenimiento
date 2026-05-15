@@ -4,6 +4,22 @@ import { getAdminSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
+type ReportMaintenance = {
+  id: string;
+  title: string;
+  dueDate: Date;
+  dueKm: number | null;
+  status: "PENDING" | "SENT" | "DONE";
+  description: string | null;
+  createdAt: Date;
+  vehicle: {
+    plate: string;
+    driverCc: string;
+    model: string;
+    company: string | null;
+  };
+};
+
 function csvEscape(value: unknown) {
   const raw = value == null ? "" : String(value);
   const escaped = raw.replace(/"/g, '""');
@@ -52,7 +68,7 @@ export async function GET() {
     "creado_en",
   ];
 
-  const rows = maintenances.map((item) => [
+  const rows = (maintenances as ReportMaintenance[]).map((item) => [
     item.vehicle.plate,
     item.vehicle.driverCc,
     item.vehicle.model,
