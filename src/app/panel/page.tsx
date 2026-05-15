@@ -466,7 +466,7 @@ export default async function PanelPage({ searchParams }: PanelProps) {
           </p>
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
+        <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
           <form action={createMaintenance} className="panel-water-card rounded-3xl p-5 sm:p-6">
             <div className="flex flex-col gap-2 border-b border-white/60 pb-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
