@@ -91,6 +91,12 @@ type PanelProps = {
   }>;
 };
 
+type PanelMaintenance = {
+  id: string;
+  title: string;
+  dueDate: Date;
+};
+
 export default async function PanelPage({ searchParams }: PanelProps) {
   const session = await getVehicleSession();
 
@@ -104,8 +110,8 @@ export default async function PanelPage({ searchParams }: PanelProps) {
 
   let dbUnavailable = false;
   let vehicle: Awaited<ReturnType<typeof prisma.vehicle.findUnique>> = null;
-  let dueSoon: Awaited<ReturnType<typeof prisma.maintenance.findMany>> = [];
-  let overdue: Awaited<ReturnType<typeof prisma.maintenance.findMany>> = [];
+  let dueSoon: PanelMaintenance[] = [];
+  let overdue: PanelMaintenance[] = [];
 
   try {
     [vehicle, dueSoon, overdue] = await Promise.all([
@@ -121,6 +127,11 @@ export default async function PanelPage({ searchParams }: PanelProps) {
             lte: warningDate,
           },
         },
+        select: {
+          id: true,
+          title: true,
+          dueDate: true,
+        },
         orderBy: { dueDate: "asc" },
       }),
       prisma.maintenance.findMany({
@@ -128,6 +139,11 @@ export default async function PanelPage({ searchParams }: PanelProps) {
           vehicleId: session.vehicleId,
           status: { not: "DONE" },
           dueDate: { lt: now },
+        },
+        select: {
+          id: true,
+          title: true,
+          dueDate: true,
         },
         orderBy: { dueDate: "asc" },
       }),
@@ -255,7 +271,7 @@ export default async function PanelPage({ searchParams }: PanelProps) {
                 No hay mantenimientos en ventana de alerta.
               </li>
             )}
-            {dueSoon.map((maintenance) => (
+            {dueSoon.map((maintenance: PanelMaintenance) => (
               <li
                 key={maintenance.id}
                 className="rounded-xl border border-amber-200 bg-white/70 p-3"
@@ -276,7 +292,7 @@ export default async function PanelPage({ searchParams }: PanelProps) {
           {overdue.length === 0 && (
             <li className="text-sm text-rose-700">Sin mantenimientos vencidos.</li>
           )}
-          {overdue.map((maintenance) => (
+          {overdue.map((maintenance: PanelMaintenance) => (
             <li
               key={maintenance.id}
               className="rounded-xl border border-rose-200 bg-white/70 p-3"
