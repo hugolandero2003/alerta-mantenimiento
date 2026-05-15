@@ -12,11 +12,17 @@ async function adminLogin(formData: FormData) {
     redirect("/admin/login?error=Ingresa+usuario+y+contrasena");
   }
 
-  const expectedUser = process.env.ADMIN_USER;
-  const expectedPassword = process.env.ADMIN_PASSWORD;
+  const expectedUser =
+    process.env.ADMIN_USER ??
+    process.env.ADMIN_USERNAME ??
+    process.env.VERCEL_ADMIN_USER;
+  const expectedPassword =
+    process.env.ADMIN_PASSWORD ??
+    process.env.ADMIN_PASS ??
+    process.env.VERCEL_ADMIN_PASSWORD;
 
   if (!expectedUser || !expectedPassword) {
-    redirect("/admin/login?error=Faltan+credenciales+admin+en+.env");
+    redirect("/admin/login?error=Faltan+credenciales+admin+en+variables+de+entorno");
   }
 
   if (username !== expectedUser || password !== expectedPassword) {
