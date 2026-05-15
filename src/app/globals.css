@@ -23,9 +23,237 @@
 
 body {
   background:
-    radial-gradient(circle at 5% 10%, #e2edf5 0, transparent 30%),
-    radial-gradient(circle at 90% 0%, #d5e6ee 0, transparent 25%),
-    linear-gradient(180deg, var(--background) 0%, var(--background-alt) 100%);
+    radial-gradient(circle at 10% 12%, rgba(56, 189, 248, 0.24) 0, transparent 22%),
+    radial-gradient(circle at 88% 8%, rgba(45, 212, 191, 0.18) 0, transparent 20%),
+    radial-gradient(circle at 80% 82%, rgba(99, 102, 241, 0.12) 0, transparent 24%),
+    linear-gradient(135deg, #f7fbfd 0%, #eaf4f8 38%, #d9ecf4 72%, #edf7fb 100%);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans), "Segoe UI", sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.32) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.32) 1px, transparent 1px);
+  background-size: 42px 42px;
+  opacity: 0.22;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.35) 100%);
+}
+
+.btn-glass {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.btn-glass:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.btn-glass:focus-visible {
+  outline: 2px solid rgba(96, 165, 250, 0.55);
+  outline-offset: 2px;
+}
+
+.btn-glass-neutral {
+  color: #1f3348;
+  border-color: rgba(186, 201, 219, 0.75);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(241, 246, 251, 0.76) 100%);
+}
+
+.btn-glass-neutral:hover {
+  border-color: rgba(148, 163, 184, 0.7);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(233, 242, 251, 0.86) 100%);
+}
+
+.btn-glass-primary {
+  color: #ffffff;
+  border-color: rgba(15, 95, 115, 0.35);
+  background: linear-gradient(135deg, rgba(31, 122, 140, 0.94) 0%, rgba(15, 95, 115, 0.94) 100%);
+}
+
+.btn-glass-primary:hover {
+  border-color: rgba(15, 95, 115, 0.45);
+  background: linear-gradient(135deg, rgba(15, 95, 115, 0.96) 0%, rgba(31, 122, 140, 0.96) 100%);
+}
+
+.btn-glass-success {
+  color: #14532d;
+  border-color: rgba(134, 239, 172, 0.85);
+  background: linear-gradient(180deg, rgba(240, 253, 244, 0.92) 0%, rgba(220, 252, 231, 0.82) 100%);
+}
+
+.btn-glass-success:hover {
+  border-color: rgba(74, 222, 128, 0.86);
+  background: linear-gradient(180deg, rgba(236, 253, 241, 0.95) 0%, rgba(187, 247, 208, 0.84) 100%);
+}
+
+.btn-glass-danger {
+  color: #9f1239;
+  border-color: rgba(253, 164, 175, 0.85);
+  background: linear-gradient(180deg, rgba(255, 241, 242, 0.92) 0%, rgba(254, 226, 226, 0.82) 100%);
+}
+
+.btn-glass-danger:hover {
+  border-color: rgba(251, 113, 133, 0.86);
+  background: linear-gradient(180deg, rgba(255, 241, 242, 0.96) 0%, rgba(254, 205, 211, 0.84) 100%);
+}
+
+.field-glass {
+  border: 1px solid rgba(189, 203, 220, 0.82);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(244, 249, 253, 0.8) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.field-glass:focus,
+.field-glass:focus-visible {
+  border-color: rgba(31, 122, 140, 0.55);
+  box-shadow: 0 0 0 3px rgba(31, 122, 140, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  outline: none;
+}
+
+.field-glass:disabled {
+  background: linear-gradient(180deg, rgba(241, 245, 249, 0.92) 0%, rgba(226, 232, 240, 0.82) 100%);
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.field-glass-group {
+  border: 1px solid rgba(189, 203, 220, 0.82);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(244, 249, 253, 0.8) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.field-glass-group:focus-within {
+  border-color: rgba(31, 122, 140, 0.55);
+  box-shadow: 0 0 0 3px rgba(31, 122, 140, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.panel-water-shell {
+  position: relative;
+  overflow: hidden;
+}
+
+.panel-water-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 8% 12%, rgba(56, 189, 248, 0.18) 0, transparent 26%),
+    radial-gradient(circle at 92% 8%, rgba(45, 212, 191, 0.16) 0, transparent 24%),
+    radial-gradient(circle at 82% 86%, rgba(14, 165, 233, 0.12) 0, transparent 22%);
+}
+
+.panel-water-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(148, 214, 230, 0.85);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(236, 252, 255, 0.82) 100%);
+  box-shadow:
+    0 18px 40px rgba(14, 116, 144, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.panel-water-card::before {
+  content: "";
+  position: absolute;
+  top: -1.75rem;
+  right: -1.75rem;
+  width: 8rem;
+  height: 8rem;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.18) 0%, transparent 72%);
+  pointer-events: none;
+}
+
+.panel-water-card::after {
+  content: "";
+  position: absolute;
+  left: 1rem;
+  bottom: -2rem;
+  width: 6.5rem;
+  height: 6.5rem;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(45, 212, 191, 0.12) 0%, transparent 72%);
+  pointer-events: none;
+}
+
+.panel-water-card-teal {
+  border-color: rgba(94, 234, 212, 0.8);
+  background:
+    linear-gradient(180deg, rgba(240, 253, 250, 0.96) 0%, rgba(224, 251, 247, 0.82) 100%);
+}
+
+.panel-water-card-sky {
+  border-color: rgba(125, 211, 252, 0.8);
+  background:
+    linear-gradient(180deg, rgba(240, 249, 255, 0.96) 0%, rgba(224, 242, 254, 0.82) 100%);
+}
+
+.panel-water-card-indigo {
+  border-color: rgba(165, 180, 252, 0.8);
+  background:
+    linear-gradient(180deg, rgba(245, 243, 255, 0.96) 0%, rgba(236, 233, 254, 0.82) 100%);
+}
+
+.panel-water-card-amber {
+  border-color: rgba(251, 191, 36, 0.72);
+  background:
+    linear-gradient(180deg, rgba(255, 251, 235, 0.96) 0%, rgba(254, 249, 195, 0.82) 100%);
+}
+
+.panel-water-card-rose {
+  border-color: rgba(251, 113, 133, 0.72);
+  background:
+    linear-gradient(180deg, rgba(255, 241, 242, 0.96) 0%, rgba(255, 228, 230, 0.82) 100%);
+}
+
+.panel-water-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.panel-water-stat-value {
+  letter-spacing: -0.03em;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.panel-water-pill {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 0.35rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(148, 214, 230, 0.7);
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.9rem 1rem;
+  color: #0f5f73;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.panel-water-pill-tight {
+  padding: 0.65rem 0.8rem;
+  gap: 0.22rem;
 }

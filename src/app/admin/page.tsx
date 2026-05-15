@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { clearAdminSession, getAdminSession } from "@/lib/auth";
+import { VehicleEditForm, VehicleRegisterForm } from "../home-auth-forms";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,8 @@ const vehicleAdminSelect = {
   driverCc: true,
   model: true,
   company: true,
+  commercialLine: true,
+  cargoBodyType: true,
   createdAt: true,
   _count: {
     select: {
@@ -54,6 +57,8 @@ type VehicleAdminRow = {
   driverCc: string;
   model: string;
   company: string | null;
+  commercialLine: string | null;
+  cargoBodyType: string | null;
   createdAt: Date;
   _count: {
     maintenances: number;
@@ -77,6 +82,208 @@ type MaintenanceAdminRow = {
   };
 };
 
+const TRUCK_BRANDS = [
+  "Ashok Leyland",
+  "BharatBenz",
+  "Chevrolet",
+  "DAF",
+  "Dongfeng",
+  "Eicher",
+  "Faw",
+  "Fiat",
+  "Ford",
+  "Foton",
+  "Freightliner",
+  "GMC",
+  "Hino",
+  "Hyundai",
+  "International",
+  "Isuzu",
+  "Iveco",
+  "JAC",
+  "Kenworth",
+  "Mack",
+  "MAN",
+  "Maxus",
+  "Mazda",
+  "Mercedes-Benz",
+  "Mitsubishi Fuso",
+  "Nissan",
+  "Peterbilt",
+  "Ram",
+  "Renault Trucks",
+  "Scania",
+  "Shacman",
+  "Sinotruk",
+  "Toyota",
+  "UD Trucks",
+  "Volkswagen",
+  "Volvo",
+  "Western Star",
+  "Otro",
+];
+
+const HEAVY_TRUCK_LINES = [
+  "Camion rigido",
+  "Tractocamion",
+  "Furgon seco",
+  "Furgon refrigerado",
+  "Estacado",
+  "Sencillo 2 ejes",
+  "Doble troque",
+  "Volqueta",
+  "Cisterna",
+];
+
+const MEDIUM_TRUCK_LINES = [
+  "Turbo",
+  "Camion liviano",
+  "Furgon seco",
+  "Furgon refrigerado",
+  "Estacado",
+  "Cava",
+  "Reparto urbano",
+];
+
+const PICKUP_CARGO_LINES = [
+  "Pickup de carga",
+  "Chasis cabina",
+  "Estacas liviano",
+  "Furgon liviano",
+  "Refrigerado liviano",
+];
+
+const CARGO_BODY_TYPES_BY_BRAND: Record<string, string[]> = {
+  "Ashok Leyland": HEAVY_TRUCK_LINES,
+  BharatBenz: HEAVY_TRUCK_LINES,
+  Chevrolet: [...MEDIUM_TRUCK_LINES, ...PICKUP_CARGO_LINES],
+  DAF: HEAVY_TRUCK_LINES,
+  Dongfeng: [...MEDIUM_TRUCK_LINES, ...HEAVY_TRUCK_LINES],
+  Eicher: MEDIUM_TRUCK_LINES,
+  Faw: HEAVY_TRUCK_LINES,
+  Fiat: PICKUP_CARGO_LINES,
+  Ford: [...MEDIUM_TRUCK_LINES, ...PICKUP_CARGO_LINES],
+  Foton: [...MEDIUM_TRUCK_LINES, ...HEAVY_TRUCK_LINES],
+  Freightliner: HEAVY_TRUCK_LINES,
+  GMC: [...MEDIUM_TRUCK_LINES, ...PICKUP_CARGO_LINES],
+  Hino: [...MEDIUM_TRUCK_LINES, ...HEAVY_TRUCK_LINES],
+  Hyundai: [...MEDIUM_TRUCK_LINES, ...PICKUP_CARGO_LINES],
+  International: HEAVY_TRUCK_LINES,
+  Isuzu: MEDIUM_TRUCK_LINES,
+  Iveco: [...MEDIUM_TRUCK_LINES, ...HEAVY_TRUCK_LINES],
+  JAC: MEDIUM_TRUCK_LINES,
+  Kenworth: HEAVY_TRUCK_LINES,
+  Mack: HEAVY_TRUCK_LINES,
+  MAN: HEAVY_TRUCK_LINES,
+  Maxus: MEDIUM_TRUCK_LINES,
+  Mazda: PICKUP_CARGO_LINES,
+  "Mercedes-Benz": [...MEDIUM_TRUCK_LINES, ...HEAVY_TRUCK_LINES],
+  "Mitsubishi Fuso": MEDIUM_TRUCK_LINES,
+  Nissan: [...MEDIUM_TRUCK_LINES, ...PICKUP_CARGO_LINES],
+  Peterbilt: HEAVY_TRUCK_LINES,
+  Ram: PICKUP_CARGO_LINES,
+  "Renault Trucks": HEAVY_TRUCK_LINES,
+  Scania: HEAVY_TRUCK_LINES,
+  Shacman: HEAVY_TRUCK_LINES,
+  Sinotruk: HEAVY_TRUCK_LINES,
+  Toyota: PICKUP_CARGO_LINES,
+  "UD Trucks": HEAVY_TRUCK_LINES,
+  Volkswagen: [...MEDIUM_TRUCK_LINES, ...HEAVY_TRUCK_LINES],
+  Volvo: HEAVY_TRUCK_LINES,
+  "Western Star": HEAVY_TRUCK_LINES,
+  Otro: [
+    "Turbo",
+    "Camion rigido",
+    "Tractocamion",
+    "Furgon seco",
+    "Furgon refrigerado",
+    "Estacado",
+    "Volqueta",
+    "Cisterna",
+  ],
+};
+
+const DEFAULT_COMMERCIAL_LINES = ["No especificada"];
+
+const COMMERCIAL_LINES_BY_BRAND: Record<string, string[]> = {
+  "Ashok Leyland": ["Partner", "Ecomet", "Captain"],
+  BharatBenz: ["814", "1017", "1217", "2823"],
+  Chevrolet: ["NHR", "NKR", "FRR"],
+  DAF: ["CF", "XF", "XG"],
+  Dongfeng: ["Captain", "KR", "KC"],
+  Eicher: ["Pro 1049", "Pro 1075", "Pro 3015"],
+  Faw: ["Tiger V", "J6P"],
+  Fiat: ["Ducato", "Fiorino"],
+  Ford: ["F-350", "F-4000", "Cargo 1723"],
+  Foton: ["Aumark", "Ollin", "Auman"],
+  Freightliner: ["M2 106", "M2 112", "Cascadia"],
+  GMC: ["W3500", "W4500", "W5500"],
+  Hino: ["Serie 300", "Serie 500", "Serie 700"],
+  Hyundai: ["HD65", "HD78", "HD120"],
+  International: ["4300", "4400", "LT"],
+  Isuzu: ["NHR", "NKR", "NPR", "NQR", "FRR", "FVR"],
+  Iveco: ["Daily", "Tector", "Hi-Way"],
+  JAC: ["X200", "N120", "N200"],
+  Kenworth: ["T370", "T800", "T680"],
+  Mack: ["MD", "Pinnacle", "Granite"],
+  MAN: ["TGL", "TGM", "TGX"],
+  Maxus: ["T60", "Deliver 9"],
+  Mazda: ["BT-50", "Titan"],
+  "Mercedes-Benz": ["Accelo", "Atego", "Actros"],
+  "Mitsubishi Fuso": ["Canter", "Fighter"],
+  Nissan: ["Frontier NP300", "Cabstar", "UD Croner"],
+  Peterbilt: ["337", "389", "579"],
+  Ram: ["700", "1500", "4000"],
+  "Renault Trucks": ["D", "C", "T"],
+  Scania: ["P", "G", "R"],
+  Shacman: ["F3000", "X3000"],
+  Sinotruk: ["HOWO 4x2", "HOWO 6x4"],
+  Toyota: ["Hilux", "Dyna"],
+  "UD Trucks": ["Croner", "Quester"],
+  Volkswagen: ["Delivery", "Constellation"],
+  Volvo: ["VM", "FM", "FH"],
+  "Western Star": ["4700", "4900", "57X"],
+  Otro: ["NHR/NPR equivalente", "Mediano", "Pesado"],
+};
+
+const PESV_MAINTENANCE_TYPES = [
+  "Inspeccion preoperacional",
+  "Cambio de aceite y filtros",
+  "Sistema de frenos",
+  "Sistema de direccion",
+  "Suspension",
+  "Llantas y alineacion",
+  "Sistema electrico y bateria",
+  "Sistema de luces y senalizacion",
+  "Motor y refrigeracion",
+  "Transmision y embrague",
+  "Sistema de escape",
+  "Carroceria y puntos de anclaje",
+  "Sistema neumatico",
+  "Revision tecnicomecanica",
+  "Elementos de seguridad (botiquin, extintor, conos)",
+];
+
+const PESV_SYSTEMS = [
+  "Frenos",
+  "Direccion",
+  "Suspension",
+  "Llantas",
+  "Motor",
+  "Sistema electrico",
+  "Luces y senalizacion",
+  "Transmision",
+  "Carroceria y carga",
+  "Seguridad activa y pasiva",
+];
+
+const SERVICE_MODALITIES = [
+  "Preventivo",
+  "Predictivo",
+  "Correctivo",
+  "Inspeccion reglamentaria",
+];
+
 function toInputDate(date: Date) {
   return new Date(date).toISOString().slice(0, 10);
 }
@@ -86,6 +293,31 @@ function formatDateTime(date: Date) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
+}
+
+function parseMaintenanceMeta(description: string | null, key: "Sistema PESV" | "Modalidad") {
+  if (!description) {
+    return "-";
+  }
+
+  const parts = description.split("|").map((item) => item.trim());
+  const target = parts.find((part) => part.startsWith(`${key}:`));
+  return target ? target.replace(`${key}:`, "").trim() : "-";
+}
+
+function parseVehicleModel(model: string) {
+  const cleanModel = model.trim();
+  const brand =
+    TRUCK_BRANDS.find((item) => cleanModel === item || cleanModel.startsWith(`${item} `)) ?? "";
+
+  const [leftPart, cargoPart] = cleanModel.split(" - ");
+  const commercialLine = brand ? leftPart.replace(brand, "").trim() : "";
+
+  return {
+    brand,
+    commercialLine,
+    cargoBodyType: cargoPart?.trim() ?? "",
+  };
 }
 
 async function adminLogout() {
@@ -105,23 +337,48 @@ async function createVehicleFromAdmin(formData: FormData) {
   const driverCc = String(formData.get("driverCc") ?? "").trim();
   const model = String(formData.get("model") ?? "").trim();
   const driverName = String(formData.get("driverName") ?? "").trim();
+  const commercialLine = String(formData.get("commercialLine") ?? "").trim();
+  const cargoBodyType = String(formData.get("cargoBodyType") ?? "").trim();
 
-  if (!plate || !driverCc || !model || !driverName) {
-    redirect("/admin?error=Completa+placa%2C+cedula%2C+marca+y+conductor");
+  if (!plate || !driverCc || !model || !driverName || !commercialLine || !cargoBodyType) {
+    redirect("/admin?error=Completa+todos+los+campos+del+formulario");
   }
+
+  if (!TRUCK_BRANDS.includes(model)) {
+    redirect("/admin?error=Selecciona+una+marca+valida");
+  }
+
+  const validCommercialLines = COMMERCIAL_LINES_BY_BRAND[model] ?? DEFAULT_COMMERCIAL_LINES;
+  const validCargoBodyTypes = CARGO_BODY_TYPES_BY_BRAND[model] ?? [];
+
+  if (!validCommercialLines.includes(commercialLine)) {
+    redirect("/admin?error=Selecciona+una+linea+comercial+valida");
+  }
+
+  if (!validCargoBodyTypes.includes(cargoBodyType)) {
+    redirect("/admin?error=Selecciona+una+carroceria+valida");
+  }
+
+  const vehicleModel = `${model} ${commercialLine} - ${cargoBodyType}`;
 
   await prisma.vehicle.upsert({
     where: { plate },
     create: {
       plate,
       driverCc,
-      model,
+      model: vehicleModel,
       company: driverName,
+      driverName,
+      commercialLine,
+      cargoBodyType,
     },
     update: {
       driverCc,
-      model,
+      model: vehicleModel,
       company: driverName,
+      driverName,
+      commercialLine,
+      cargoBodyType,
     },
   });
 
@@ -139,19 +396,41 @@ async function updateVehicleFromAdmin(formData: FormData) {
     .replace(/\s+/g, "");
   const driverCc = String(formData.get("driverCc") ?? "").trim();
   const model = String(formData.get("model") ?? "").trim();
+  const commercialLine = String(formData.get("commercialLine") ?? "").trim();
+  const cargoBodyType = String(formData.get("cargoBodyType") ?? "").trim();
   const driverName = String(formData.get("driverName") ?? "").trim();
 
-  if (!vehicleId || !plate || !driverCc || !model || !driverName) {
+  if (!vehicleId || !plate || !driverCc || !model || !commercialLine || !cargoBodyType || !driverName) {
     redirect("/admin?error=Datos+invalidos+para+actualizar+usuario");
   }
+
+  if (!TRUCK_BRANDS.includes(model)) {
+    redirect("/admin?error=Selecciona+una+marca+valida");
+  }
+
+  const validCommercialLines = COMMERCIAL_LINES_BY_BRAND[model] ?? DEFAULT_COMMERCIAL_LINES;
+  const validCargoBodyTypes = CARGO_BODY_TYPES_BY_BRAND[model] ?? [];
+
+  if (!validCommercialLines.includes(commercialLine)) {
+    redirect("/admin?error=Selecciona+una+linea+comercial+valida");
+  }
+
+  if (!validCargoBodyTypes.includes(cargoBodyType)) {
+    redirect("/admin?error=Selecciona+una+carroceria+valida");
+  }
+
+  const vehicleModel = `${model} ${commercialLine} - ${cargoBodyType}`;
 
   await prisma.vehicle.update({
     where: { id: vehicleId },
     data: {
       plate,
       driverCc,
-      model,
+      model: vehicleModel,
       company: driverName,
+      driverName,
+      commercialLine,
+      cargoBodyType,
     },
   });
 
@@ -180,22 +459,35 @@ async function createMaintenanceFromAdmin(formData: FormData) {
   "use server";
 
   const vehicleId = String(formData.get("vehicleId") ?? "").trim();
-  const title = String(formData.get("title") ?? "").trim();
+  const maintenanceType = String(formData.get("maintenanceType") ?? "").trim();
+  const pesvSystem = String(formData.get("pesvSystem") ?? "").trim();
+  const serviceModality = String(formData.get("serviceModality") ?? "").trim();
+  const titleNote = String(formData.get("titleNote") ?? "").trim();
   const dueDateRaw = String(formData.get("dueDate") ?? "").trim();
-  const dueKmRaw = String(formData.get("dueKm") ?? "").trim();
+  const currentKmRaw = String(formData.get("currentKm") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
 
-  if (!vehicleId || !title || !dueDateRaw) {
-    redirect("/admin?error=Completa+vehiculo%2C+titulo+y+fecha+del+mantenimiento");
+  if (!vehicleId || !maintenanceType || !pesvSystem || !serviceModality || !dueDateRaw) {
+    redirect("/admin?error=Completa+vehiculo%2C+tipo+PESV%2C+sistema%2C+modalidad+y+fecha");
   }
+
+  const finalTitle = titleNote ? `${maintenanceType} - ${titleNote}` : maintenanceType;
+
+  const finalDescription = [
+    `Sistema PESV: ${pesvSystem}`,
+    `Modalidad: ${serviceModality}`,
+    description,
+  ]
+    .filter(Boolean)
+    .join(" | ");
 
   await prisma.maintenance.create({
     data: {
       vehicleId,
-      title,
+      title: finalTitle,
       dueDate: new Date(dueDateRaw),
-      dueKm: dueKmRaw ? Number(dueKmRaw) : null,
-      description: description || null,
+      dueKm: currentKmRaw ? Number(currentKmRaw) : null,
+      description: finalDescription || null,
     },
   });
 
@@ -207,15 +499,27 @@ async function updateMaintenanceFromAdmin(formData: FormData) {
   "use server";
 
   const maintenanceId = String(formData.get("maintenanceId") ?? "").trim();
-  const title = String(formData.get("title") ?? "").trim();
+  const maintenanceType = String(formData.get("maintenanceType") ?? "").trim();
+  const serviceModality = String(formData.get("serviceModality") ?? "").trim();
+  const pesvSystem = String(formData.get("pesvSystem") ?? "").trim();
+  const titleNote = String(formData.get("titleNote") ?? "").trim();
   const dueDateRaw = String(formData.get("dueDate") ?? "").trim();
-  const dueKmRaw = String(formData.get("dueKm") ?? "").trim();
+  const currentKmRaw = String(formData.get("currentKm") ?? "").trim();
   const status = String(formData.get("status") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
 
-  if (!maintenanceId || !title || !dueDateRaw) {
+  if (!maintenanceId || !maintenanceType || !serviceModality || !pesvSystem || !dueDateRaw) {
     redirect("/admin?error=Datos+invalidos+para+actualizar+mantenimiento");
   }
+
+  const finalTitle = titleNote ? `${maintenanceType} - ${titleNote}` : maintenanceType;
+  const finalDescription = [
+    `Sistema PESV: ${pesvSystem}`,
+    `Modalidad: ${serviceModality}`,
+    description,
+  ]
+    .filter(Boolean)
+    .join(" | ");
 
   const normalizedStatus =
     status === "SENT" || status === "DONE" ? status : "PENDING";
@@ -223,11 +527,11 @@ async function updateMaintenanceFromAdmin(formData: FormData) {
   await prisma.maintenance.update({
     where: { id: maintenanceId },
     data: {
-      title,
+      title: finalTitle,
       dueDate: new Date(dueDateRaw),
-      dueKm: dueKmRaw ? Number(dueKmRaw) : null,
+      dueKm: currentKmRaw ? Number(currentKmRaw) : null,
       status: normalizedStatus,
-      description: description || null,
+      description: finalDescription || null,
       completedAt: normalizedStatus === "DONE" ? new Date() : null,
     },
   });
@@ -299,10 +603,6 @@ export default async function AdminPage({ searchParams }: AdminProps) {
             <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
               Usuarios registrados
             </h1>
-            <p className="mt-2 text-sm text-slate-700 sm:text-base">
-              Gestiona usuarios, mantenimientos, y descarga reportes desde este
-              panel privado.
-            </p>
             <p className="mt-2 text-xs font-medium uppercase tracking-wide text-slate-500">
               Sesion admin: {adminSession.username}
             </p>
@@ -310,20 +610,20 @@ export default async function AdminPage({ searchParams }: AdminProps) {
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/"
-              className="rounded-xl border border-line bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="admin-water-button admin-water-button-neutral"
             >
               Ir al login principal
             </Link>
             <a
               href="/api/admin/report"
-              className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+              className="admin-water-button admin-water-button-success"
             >
               Descargar reporte CSV
             </a>
             <form action={adminLogout}>
               <button
                 type="submit"
-                className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                className="admin-water-button admin-water-button-danger"
               >
                 Cerrar sesion admin
               </button>
@@ -351,143 +651,155 @@ export default async function AdminPage({ searchParams }: AdminProps) {
       )}
 
       {!dbUnavailable && (
-        <section className="rounded-2xl border border-line bg-panel p-5 shadow-sm">
-          <h2 className="text-lg font-semibold">Crear o actualizar usuario</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Crea usuarios nuevos para login o actualiza por placa existente.
-          </p>
-          <form action={createVehicleFromAdmin} className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <input
-              required
-              name="plate"
-              placeholder="Placa"
-              className="rounded-xl border border-line bg-white px-3 py-2 text-sm uppercase outline-none focus:border-accent"
-            />
-            <input
-              required
-              name="driverCc"
-              placeholder="Cedula"
-              className="rounded-xl border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent"
-            />
-            <input
-              required
-              name="model"
-              placeholder="Marca"
-              className="rounded-xl border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent"
-            />
-            <input
-              required
-              name="driverName"
-              placeholder="Conductor"
-              className="rounded-xl border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent"
-            />
-            <button
-              type="submit"
-              className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-strong sm:col-span-2 lg:col-span-4"
-            >
-              Guardar usuario
-            </button>
-          </form>
-        </section>
+        <details open className="rounded-2xl border border-line bg-panel p-5 shadow-sm">
+          <summary className="admin-section-summary cursor-pointer text-lg font-semibold text-slate-800">
+            Registrar usuario
+          </summary>
+          <VehicleRegisterForm
+            action={createVehicleFromAdmin}
+            brands={TRUCK_BRANDS}
+            commercialLinesByBrand={COMMERCIAL_LINES_BY_BRAND}
+            cargoBodyTypesByBrand={CARGO_BODY_TYPES_BY_BRAND}
+          />
+        </details>
       )}
 
       {!dbUnavailable && (
-        <section className="overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
-          <div className="border-b border-line px-4 py-3">
-            <h2 className="text-lg font-semibold">Usuarios y estado de mantenimiento</h2>
-          </div>
+        <details open className="overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
+          <summary className="admin-section-summary cursor-pointer border-b border-line px-4 py-3 text-lg font-semibold text-slate-800">
+            Usuarios y estado de mantenimiento
+          </summary>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] text-left text-sm">
+            <table className="admin-table w-full min-w-[980px] text-left text-sm">
               <thead className="bg-slate-100 text-slate-700">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Placa</th>
-                  <th className="px-4 py-3 font-semibold">Cedula</th>
-                  <th className="px-4 py-3 font-semibold">Modelo</th>
+                  <th className="px-4 py-3 font-semibold">Vehiculo</th>
                   <th className="px-4 py-3 font-semibold">Conductor</th>
-                  <th className="px-4 py-3 font-semibold">Programados</th>
+                  <th className="px-4 py-3 font-semibold">Estado</th>
                   <th className="px-4 py-3 font-semibold">Proximo mantenimiento</th>
-                  <th className="px-4 py-3 font-semibold">Creado</th>
-                  <th className="px-4 py-3 font-semibold">Acciones</th>
+                  <th className="px-4 py-3 font-semibold">Registro</th>
+                  <th className="px-4 py-3 font-semibold text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {vehicles.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-6 text-center text-slate-600">
+                    <td colSpan={6} className="px-4 py-6 text-center text-slate-600">
                       Aun no hay usuarios registrados.
                     </td>
                   </tr>
                 ) : (
-                  vehicles.map((vehicle) => (
-                    <tr key={vehicle.id} className="border-t border-line">
-                      <td className="px-4 py-3 font-semibold">{vehicle.plate}</td>
-                      <td className="px-4 py-3">{vehicle.driverCc}</td>
-                      <td className="px-4 py-3">{vehicle.model}</td>
-                      <td className="px-4 py-3">{vehicle.company || "-"}</td>
-                      <td className="px-4 py-3">{vehicle._count.maintenances}</td>
+                  vehicles.map((vehicle, index) => {
+                    const parsedModel = parseVehicleModel(vehicle.model);
+                    const selectedBrand = parsedModel.brand;
+                    const selectedCommercialLine = vehicle.commercialLine ?? parsedModel.commercialLine;
+                    const selectedCargoBodyType = vehicle.cargoBodyType ?? parsedModel.cargoBodyType;
+
+                    return (
+                    <tr key={vehicle.id} className="border-t border-line align-top hover:bg-slate-50/70">
+                      <td className="px-4 py-3">
+                        <p className="font-semibold text-slate-900">{vehicle.plate}</p>
+                        <p className="text-xs text-slate-500">{selectedBrand || vehicle.model}</p>
+                        <p className="text-xs text-slate-500">
+                          {selectedCommercialLine || "-"} / {selectedCargoBodyType || "-"}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-slate-900">{vehicle.company || "-"}</p>
+                        <p className="text-xs text-slate-500">CC: {vehicle.driverCc}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-700">
+                          {vehicle._count.maintenances} programados
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-slate-600">
                         {vehicle.maintenances[0]
                           ? `${vehicle.maintenances[0].title} - ${formatDateTime(vehicle.maintenances[0].dueDate)}`
                           : "Sin pendientes"}
                       </td>
-                      <td className="px-4 py-3 text-slate-600">
-                        {vehicle.createdAt.toLocaleString("es-CO")}
+                      <td className="px-4 py-3">
+                        <p className="text-xs text-slate-500">Creado</p>
+                        <p className="text-sm text-slate-700">{vehicle.createdAt.toLocaleString("es-CO")}</p>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex min-w-[220px] flex-wrap gap-2">
-                          <form action={updateVehicleFromAdmin} className="flex w-full flex-wrap gap-2">
-                            <input type="hidden" name="vehicleId" value={vehicle.id} />
-                            <input
-                              required
-                              name="plate"
-                              defaultValue={vehicle.plate}
-                              className="w-full rounded-lg border border-line bg-white px-2 py-1 text-xs uppercase outline-none focus:border-accent"
-                            />
-                            <input
-                              required
-                              name="driverCc"
-                              defaultValue={vehicle.driverCc}
-                              className="w-full rounded-lg border border-line bg-white px-2 py-1 text-xs outline-none focus:border-accent"
-                            />
-                            <input
-                              required
-                              name="model"
-                              defaultValue={vehicle.model}
-                              className="w-full rounded-lg border border-line bg-white px-2 py-1 text-xs outline-none focus:border-accent"
-                            />
-                            <input
-                              required
-                              name="driverName"
-                              defaultValue={vehicle.company || ""}
-                              className="w-full rounded-lg border border-line bg-white px-2 py-1 text-xs outline-none focus:border-accent"
-                            />
-                            <button className="rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800 transition hover:bg-amber-100">
-                              Actualizar
-                            </button>
-                          </form>
-                          <form action={deleteVehicleFromAdmin}>
-                            <input type="hidden" name="vehicleId" value={vehicle.id} />
-                            <button className="rounded-lg border border-rose-300 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700 transition hover:bg-rose-100">
-                              Eliminar
-                            </button>
-                          </form>
+                        <div className="flex min-w-[170px] flex-col items-center gap-2">
+                          <div className="flex items-center gap-2">
+                            <details className="action-details" name="admin-action-modal">
+                              <summary className="action-icon flex cursor-pointer list-none items-center justify-center rounded-lg border border-amber-300 bg-amber-50 text-amber-700 transition hover:bg-amber-100">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
+                                  <path d="M12 20h9" />
+                                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                                </svg>
+                              </summary>
+                              <VehicleEditForm
+                                action={updateVehicleFromAdmin}
+                                vehicleId={vehicle.id}
+                                brands={TRUCK_BRANDS}
+                                commercialLinesByBrand={COMMERCIAL_LINES_BY_BRAND}
+                                cargoBodyTypesByBrand={CARGO_BODY_TYPES_BY_BRAND}
+                                initialPlate={vehicle.plate}
+                                initialDriverCc={vehicle.driverCc}
+                                initialDriverName={vehicle.company || ""}
+                                initialBrand={selectedBrand}
+                                initialCommercialLine={selectedCommercialLine}
+                                initialCargoBodyType={selectedCargoBodyType}
+                              />
+                            </details>
+
+                            <details className="action-details" name="admin-action-modal">
+                              <summary className="action-icon flex cursor-pointer list-none items-center justify-center rounded-lg border border-rose-300 bg-rose-50 text-rose-700 transition hover:bg-rose-100">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
+                                  <path d="M3 6h18" />
+                                  <path d="M8 6V4h8v2" />
+                                  <path d="m19 6-1 14H6L5 6" />
+                                </svg>
+                              </summary>
+                              <form action={deleteVehicleFromAdmin} className="inline-action-panel action-modal-panel action-modal-danger">
+                                <input type="hidden" name="vehicleId" value={vehicle.id} />
+                                <div className="mb-3 flex items-center justify-end">
+                                  <a href="/admin" className="rounded-full border border-line px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100">
+                                    Cerrar
+                                  </a>
+                                </div>
+                                <div className="mb-3 border-b border-rose-100 pb-3">
+                                  <p className="text-sm font-semibold text-rose-800">Eliminar usuario</p>
+                                  <p className="text-xs text-slate-600">Esta accion no se puede deshacer.</p>
+                                </div>
+                                <div className="mb-4 rounded-lg border border-rose-100 bg-rose-50/60 p-3 text-xs text-slate-700">
+                                  <p>
+                                    <span className="font-semibold">Placa:</span> {vehicle.plate}
+                                  </p>
+                                  <p>
+                                    <span className="font-semibold">Conductor:</span> {vehicle.company || "-"}
+                                  </p>
+                                  <p>
+                                    <span className="font-semibold">CC:</span> {vehicle.driverCc}
+                                  </p>
+                                </div>
+                                <button className="w-full rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100">
+                                  Confirmar eliminar
+                                </button>
+                              </form>
+                            </details>
+                          </div>
                         </div>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
           </div>
-        </section>
+        </details>
       )}
 
       {!dbUnavailable && (
-        <section className="rounded-2xl border border-line bg-panel p-5 shadow-sm">
-          <h2 className="text-lg font-semibold">CRUD de mantenimientos</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Crea, actualiza estado y elimina mantenimientos desde administracion.
-          </p>
+        <details open className="rounded-2xl border border-line bg-panel p-5 shadow-sm">
+          <summary className="admin-section-summary cursor-pointer text-lg font-semibold text-slate-800">
+            Programar y administrar mantenimientos
+          </summary>
 
           <form action={createMaintenanceFromAdmin} className="mt-4 grid gap-3 lg:grid-cols-6">
             <select
@@ -505,24 +817,68 @@ export default async function AdminPage({ searchParams }: AdminProps) {
                 </option>
               ))}
             </select>
-            <input
+            <select
               required
-              name="title"
-              placeholder="Titulo"
+              name="maintenanceType"
+              defaultValue=""
               className="rounded-xl border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent lg:col-span-2"
-            />
+            >
+              <option value="" disabled>
+                Tipo de mantenimiento (PESV)
+              </option>
+              {PESV_MAINTENANCE_TYPES.map((item) => (
+                <option key={`type-${item}`} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+            <select
+              required
+              name="pesvSystem"
+              defaultValue=""
+              className="rounded-xl border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent"
+            >
+              <option value="" disabled>
+                Sistema PESV
+              </option>
+              {PESV_SYSTEMS.map((item) => (
+                <option key={`system-${item}`} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
             <input
               required
               type="date"
               name="dueDate"
               className="rounded-xl border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent"
             />
+            <select
+              required
+              name="serviceModality"
+              defaultValue=""
+              className="rounded-xl border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent"
+            >
+              <option value="" disabled>
+                Modalidad
+              </option>
+              {SERVICE_MODALITIES.map((item) => (
+                <option key={`mode-${item}`} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
             <input
               type="number"
               min="0"
-              name="dueKm"
-              placeholder="Km objetivo"
+              name="currentKm"
+              placeholder="Km actual"
               className="rounded-xl border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent"
+            />
+            <input
+              name="titleNote"
+              placeholder="Observacion corta (opcional)"
+              className="rounded-xl border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent lg:col-span-3"
             />
             <textarea
               name="description"
@@ -540,9 +896,11 @@ export default async function AdminPage({ searchParams }: AdminProps) {
               <thead className="bg-slate-100 text-slate-700">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Vehiculo</th>
-                  <th className="px-4 py-3 font-semibold">Titulo</th>
+                  <th className="px-4 py-3 font-semibold">Tipo PESV</th>
+                  <th className="px-4 py-3 font-semibold">Sistema PESV</th>
+                  <th className="px-4 py-3 font-semibold">Modalidad</th>
                   <th className="px-4 py-3 font-semibold">Fecha</th>
-                  <th className="px-4 py-3 font-semibold">Km</th>
+                  <th className="px-4 py-3 font-semibold">Km actual</th>
                   <th className="px-4 py-3 font-semibold">Estado</th>
                   <th className="px-4 py-3 font-semibold">Descripcion</th>
                   <th className="px-4 py-3 font-semibold">Acciones</th>
@@ -551,7 +909,7 @@ export default async function AdminPage({ searchParams }: AdminProps) {
               <tbody>
                 {maintenances.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-6 text-center text-slate-600">
+                    <td colSpan={9} className="px-4 py-6 text-center text-slate-600">
                       No hay mantenimientos registrados.
                     </td>
                   </tr>
@@ -560,59 +918,171 @@ export default async function AdminPage({ searchParams }: AdminProps) {
                     <tr key={maintenance.id} className="border-t border-line">
                       <td className="px-4 py-3 font-semibold">{maintenance.vehicle.plate}</td>
                       <td className="px-4 py-3">{maintenance.title}</td>
+                      <td className="px-4 py-3">{parseMaintenanceMeta(maintenance.description, "Sistema PESV")}</td>
+                      <td className="px-4 py-3">{parseMaintenanceMeta(maintenance.description, "Modalidad")}</td>
                       <td className="px-4 py-3">{formatDateTime(maintenance.dueDate)}</td>
                       <td className="px-4 py-3">{maintenance.dueKm ?? "-"}</td>
                       <td className="px-4 py-3">{maintenance.status}</td>
                       <td className="px-4 py-3">{maintenance.description || "-"}</td>
                       <td className="px-4 py-3">
-                        <div className="flex min-w-[260px] flex-wrap gap-2">
-                          <form action={updateMaintenanceFromAdmin} className="flex w-full flex-wrap gap-2">
-                            <input type="hidden" name="maintenanceId" value={maintenance.id} />
-                            <input
-                              required
-                              name="title"
-                              defaultValue={maintenance.title}
-                              className="w-full rounded-lg border border-line bg-white px-2 py-1 text-xs outline-none focus:border-accent"
-                            />
-                            <input
-                              required
-                              type="date"
-                              name="dueDate"
-                              defaultValue={toInputDate(maintenance.dueDate)}
-                              className="rounded-lg border border-line bg-white px-2 py-1 text-xs outline-none focus:border-accent"
-                            />
-                            <input
-                              type="number"
-                              min="0"
-                              name="dueKm"
-                              defaultValue={maintenance.dueKm ?? ""}
-                              className="w-[90px] rounded-lg border border-line bg-white px-2 py-1 text-xs outline-none focus:border-accent"
-                            />
-                            <select
-                              name="status"
-                              defaultValue={maintenance.status}
-                              className="rounded-lg border border-line bg-white px-2 py-1 text-xs outline-none focus:border-accent"
-                            >
-                              <option value="PENDING">PENDING</option>
-                              <option value="SENT">SENT</option>
-                              <option value="DONE">DONE</option>
-                            </select>
-                            <input
-                              name="description"
-                              defaultValue={maintenance.description || ""}
-                              placeholder="Descripcion"
-                              className="w-full rounded-lg border border-line bg-white px-2 py-1 text-xs outline-none focus:border-accent"
-                            />
-                            <button className="rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800 transition hover:bg-amber-100">
-                              Actualizar
-                            </button>
-                          </form>
-                          <form action={deleteMaintenanceFromAdmin}>
-                            <input type="hidden" name="maintenanceId" value={maintenance.id} />
-                            <button className="rounded-lg border border-rose-300 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700 transition hover:bg-rose-100">
-                              Eliminar
-                            </button>
-                          </form>
+                        <div className="flex min-w-[170px] flex-col items-center gap-2">
+                          <div className="flex items-center gap-2">
+                            <details className="action-details" name="admin-action-modal">
+                              <summary className="action-icon flex cursor-pointer list-none items-center justify-center rounded-lg border border-amber-300 bg-amber-50 text-amber-700 transition hover:bg-amber-100">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
+                                  <path d="M12 20h9" />
+                                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                                </svg>
+                              </summary>
+                              <form action={updateMaintenanceFromAdmin} className="inline-action-panel action-modal-panel">
+                              <input type="hidden" name="maintenanceId" value={maintenance.id} />
+                              <div className="mb-3 flex items-center justify-end">
+                                <a href="/admin" className="rounded-full border border-line px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100">
+                                  Cerrar
+                                </a>
+                              </div>
+                              <div className="mb-3 border-b border-line pb-3">
+                                <p className="text-sm font-semibold text-slate-900">Editar mantenimiento</p>
+                                <p className="text-xs text-slate-500">Vehiculo {maintenance.vehicle.plate}</p>
+                              </div>
+                              <div className="grid gap-3 sm:grid-cols-2">
+                                <label className="text-xs font-semibold text-slate-700 sm:col-span-2">
+                                  Tipo PESV
+                                  <select
+                                    required
+                                    name="maintenanceType"
+                                    defaultValue={maintenance.title.split(" - ")[0] || maintenance.title}
+                                    className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent"
+                                  >
+                                    {PESV_MAINTENANCE_TYPES.map((item) => (
+                                      <option key={`edit-type-${maintenance.id}-${item}`} value={item}>
+                                        {item}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                                <label className="text-xs font-semibold text-slate-700">
+                                  Sistema PESV
+                                  <select
+                                    required
+                                    name="pesvSystem"
+                                    defaultValue={parseMaintenanceMeta(maintenance.description, "Sistema PESV") !== "-" ? parseMaintenanceMeta(maintenance.description, "Sistema PESV") : PESV_SYSTEMS[0]}
+                                    className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent"
+                                  >
+                                    {PESV_SYSTEMS.map((item) => (
+                                      <option key={`edit-system-${maintenance.id}-${item}`} value={item}>
+                                        {item}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                                <label className="text-xs font-semibold text-slate-700">
+                                  Modalidad
+                                  <select
+                                    required
+                                    name="serviceModality"
+                                    defaultValue={parseMaintenanceMeta(maintenance.description, "Modalidad") !== "-" ? parseMaintenanceMeta(maintenance.description, "Modalidad") : SERVICE_MODALITIES[0]}
+                                    className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent"
+                                  >
+                                    {SERVICE_MODALITIES.map((item) => (
+                                      <option key={`edit-mode-${maintenance.id}-${item}`} value={item}>
+                                        {item}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                                <label className="text-xs font-semibold text-slate-700">
+                                  Fecha programada
+                                  <input
+                                    required
+                                    type="date"
+                                    name="dueDate"
+                                    defaultValue={toInputDate(maintenance.dueDate)}
+                                    className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent"
+                                  />
+                                </label>
+                                <label className="text-xs font-semibold text-slate-700">
+                                  Km actual
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    name="currentKm"
+                                    defaultValue={maintenance.dueKm ?? ""}
+                                    className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent"
+                                  />
+                                </label>
+                                <label className="text-xs font-semibold text-slate-700">
+                                  Estado
+                                  <select
+                                    name="status"
+                                    defaultValue={maintenance.status}
+                                    className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent"
+                                  >
+                                    <option value="PENDING">PENDING</option>
+                                    <option value="SENT">SENT</option>
+                                    <option value="DONE">DONE</option>
+                                  </select>
+                                </label>
+                                <label className="text-xs font-semibold text-slate-700">
+                                  Observacion corta
+                                  <input
+                                    name="titleNote"
+                                    defaultValue={maintenance.title.includes(" - ") ? maintenance.title.split(" - ").slice(1).join(" - ") : ""}
+                                    className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent"
+                                  />
+                                </label>
+                                <label className="text-xs font-semibold text-slate-700 sm:col-span-2">
+                                  Descripcion
+                                  <textarea
+                                    name="description"
+                                    defaultValue={maintenance.description || ""}
+                                    rows={3}
+                                    className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent"
+                                  />
+                                </label>
+                              </div>
+                              <button className="mt-4 w-full rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800 transition hover:bg-amber-100">
+                                Guardar cambios
+                              </button>
+                            </form>
+                            </details>
+
+                            <details className="action-details" name="admin-action-modal">
+                              <summary className="action-icon flex cursor-pointer list-none items-center justify-center rounded-lg border border-rose-300 bg-rose-50 text-rose-700 transition hover:bg-rose-100">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
+                                  <path d="M3 6h18" />
+                                  <path d="M8 6V4h8v2" />
+                                  <path d="m19 6-1 14H6L5 6" />
+                                </svg>
+                              </summary>
+                              <form action={deleteMaintenanceFromAdmin} className="inline-action-panel action-modal-panel action-modal-danger">
+                              <input type="hidden" name="maintenanceId" value={maintenance.id} />
+                              <div className="mb-3 flex items-center justify-end">
+                                <a href="/admin" className="rounded-full border border-line px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100">
+                                  Cerrar
+                                </a>
+                              </div>
+                              <div className="mb-3 border-b border-rose-100 pb-3">
+                                <p className="text-sm font-semibold text-rose-800">Eliminar mantenimiento</p>
+                                <p className="text-xs text-slate-600">Vehiculo {maintenance.vehicle.plate}</p>
+                              </div>
+                              <div className="mb-4 rounded-lg border border-rose-100 bg-rose-50/60 p-3 text-xs text-slate-700">
+                                <p>
+                                  <span className="font-semibold">Tipo:</span> {maintenance.title}
+                                </p>
+                                <p>
+                                  <span className="font-semibold">Fecha:</span> {formatDateTime(maintenance.dueDate)}
+                                </p>
+                                <p>
+                                  <span className="font-semibold">Estado:</span> {maintenance.status}
+                                </p>
+                              </div>
+                              <button className="w-full rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100">
+                                Confirmar eliminar
+                              </button>
+                            </form>
+                            </details>
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -621,7 +1091,7 @@ export default async function AdminPage({ searchParams }: AdminProps) {
               </tbody>
             </table>
           </div>
-        </section>
+        </details>
       )}
     </main>
   );

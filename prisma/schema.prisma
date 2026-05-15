@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,41 +6,57 @@ datasource db {
   provider = "postgresql"
 }
 
-enum AlertStatus {
-  PENDING
-  SENT
-  DONE
-}
-
 model Vehicle {
-  id           String        @id @default(cuid())
-  plate        String        @unique
-  driverCc     String
-  model        String
-  company      String?
-  currentKm    Int?
-  maintenances Maintenance[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id             String        @id @default(cuid())
+  plate          String        @unique
+  driverCc       String
+  model          String
+  company        String?
+  phoneNumber    String?
+  currentKm      Int?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  maintenances   Maintenance[]
+  commercialLine String
+  cargoBodyType  String
+  driverName     String
 
   @@index([plate])
   @@index([plate, driverCc])
 }
 
 model Maintenance {
-  id          String      @id @default(cuid())
-  vehicleId   String
-  title       String
-  description String?
-  dueDate     DateTime
-  dueKm       Int?
-  status      AlertStatus @default(PENDING)
-  notified    Boolean     @default(false)
-  completedAt DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  vehicle     Vehicle     @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  id                  String               @id @default(cuid())
+  vehicleId           String
+  title               String
+  maintenanceType     String?
+  pesvSystem          String?
+  serviceModality     String?
+  currentKm           Int?
+  description         String?
+  dueDate             DateTime
+  dueKm               Int?
+  alarmAt             DateTime?
+  notificationChannel NotificationChannel   @default(SMS)
+  status              AlertStatus          @default(PENDING)
+  notified            Boolean              @default(false)
+  completedAt         DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  vehicle             Vehicle              @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@index([vehicleId])
   @@index([dueDate, status])
+  @@index([alarmAt, notified])
+}
+
+enum AlertStatus {
+  PENDING
+  SENT
+  DONE
+}
+
+enum NotificationChannel {
+  SMS
+  WHATSAPP
 }

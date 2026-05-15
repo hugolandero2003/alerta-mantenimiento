@@ -1,81 +1,23 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
-import { createVehicleSession, getVehicleSession } from "@/lib/auth";
-import { VehicleLoginForm } from "./home-auth-forms";
+import { VehicleRegisterForm } from "../home-auth-forms";
 
 const TRUCK_BRANDS = [
-  "Ashok Leyland",
-  "BharatBenz",
-  "Chevrolet",
-  "DAF",
-  "Dongfeng",
-  "Eicher",
-  "Faw",
-  "Fiat",
-  "Ford",
-  "Foton",
-  "Freightliner",
-  "GMC",
-  "Hino",
-  "Hyundai",
-  "International",
-  "Isuzu",
-  "Iveco",
-  "JAC",
-  "Kenworth",
-  "Mack",
-  "MAN",
-  "Maxus",
-  "Mazda",
-  "Mercedes-Benz",
-  "Mitsubishi Fuso",
-  "Nissan",
-  "Peterbilt",
-  "Ram",
-  "Renault Trucks",
-  "Scania",
-  "Shacman",
-  "Sinotruk",
-  "Toyota",
-  "UD Trucks",
-  "Volkswagen",
-  "Volvo",
-  "Western Star",
-  "Otro",
+  "Ashok Leyland","BharatBenz","Chevrolet","DAF","Dongfeng","Eicher","Faw","Fiat","Ford","Foton","Freightliner","GMC","Hino","Hyundai","International","Isuzu","Iveco","JAC","Kenworth","Mack","MAN","Maxus","Mazda","Mercedes-Benz","Mitsubishi Fuso","Nissan","Peterbilt","Ram","Renault Trucks","Scania","Shacman","Sinotruk","Toyota","UD Trucks","Volkswagen","Volvo","Western Star","Otro"
 ];
 
+// Copiar los mismos objetos de page.tsx
 const HEAVY_TRUCK_LINES = [
-  "Camion rigido",
-  "Tractocamion",
-  "Furgon seco",
-  "Furgon refrigerado",
-  "Estacado",
-  "Sencillo 2 ejes",
-  "Doble troque",
-  "Volqueta",
-  "Cisterna",
+  "Camion rigido","Tractocamion","Furgon seco","Furgon refrigerado","Estacado","Sencillo 2 ejes","Doble troque","Volqueta","Cisterna"
 ];
-
 const MEDIUM_TRUCK_LINES = [
-  "Turbo",
-  "Camion liviano",
-  "Furgon seco",
-  "Furgon refrigerado",
-  "Estacado",
-  "Cava",
-  "Reparto urbano",
+  "Turbo","Camion liviano","Furgon seco","Furgon refrigerado","Estacado","Cava","Reparto urbano"
 ];
-
 const PICKUP_CARGO_LINES = [
-  "Pickup de carga",
-  "Chasis cabina",
-  "Estacas liviano",
-  "Furgon liviano",
-  "Refrigerado liviano",
+  "Pickup de carga","Chasis cabina","Estacas liviano","Furgon liviano","Refrigerado liviano"
 ];
-
-const CARGO_BODY_TYPES_BY_BRAND: Record<string, string[]> = {
+const CARGO_BODY_TYPES_BY_BRAND = {
   "Ashok Leyland": HEAVY_TRUCK_LINES,
   BharatBenz: HEAVY_TRUCK_LINES,
   Chevrolet: [...MEDIUM_TRUCK_LINES, ...PICKUP_CARGO_LINES],
@@ -113,21 +55,10 @@ const CARGO_BODY_TYPES_BY_BRAND: Record<string, string[]> = {
   Volkswagen: [...MEDIUM_TRUCK_LINES, ...HEAVY_TRUCK_LINES],
   Volvo: HEAVY_TRUCK_LINES,
   "Western Star": HEAVY_TRUCK_LINES,
-  Otro: [
-    "Turbo",
-    "Camion rigido",
-    "Tractocamion",
-    "Furgon seco",
-    "Furgon refrigerado",
-    "Estacado",
-    "Volqueta",
-    "Cisterna",
-  ],
+  Otro: ["Turbo","Camion rigido","Tractocamion","Furgon seco","Furgon refrigerado","Estacado","Volqueta","Cisterna"],
 };
-
 const DEFAULT_COMMERCIAL_LINES = ["No especificada"];
-
-const COMMERCIAL_LINES_BY_BRAND: Record<string, string[]> = {
+const COMMERCIAL_LINES_BY_BRAND = {
   "Ashok Leyland": ["Partner", "Ecomet", "Captain"],
   BharatBenz: ["814", "1017", "1217", "2823"],
   Chevrolet: ["NHR", "NKR", "FRR"],
@@ -195,35 +126,35 @@ async function registerVehicle(formData: FormData) {
   const driverName = normalizeDriverName(String(formData.get("driverName") ?? ""));
 
   if (!plate || !driverCc || !model || !commercialLine || !cargoBodyType || !driverName) {
-    redirect(`/?error=${encodeMessage("Completa todos los campos para crear el acceso")}`);
+    redirect(`/register?error=${encodeMessage("Completa todos los campos para crear el acceso")}`);
   }
 
   if (!PLATE_REGEX.test(plate)) {
-    redirect(`/?error=${encodeMessage("La placa debe tener entre 5 y 8 caracteres (letras y numeros)")}`);
+    redirect(`/register?error=${encodeMessage("La placa debe tener entre 5 y 8 caracteres (letras y numeros)")}`);
   }
 
   if (!DRIVER_CC_REGEX.test(driverCc)) {
-    redirect(`/?error=${encodeMessage("La cedula debe contener solo numeros (6 a 12 digitos)")}`);
+    redirect(`/register?error=${encodeMessage("La cedula debe contener solo numeros (6 a 12 digitos)")}`);
   }
 
   if (driverName.length > DRIVER_NAME_MAX_LENGTH) {
-    redirect(`/?error=${encodeMessage("El nombre del conductor es demasiado largo")}`);
+    redirect(`/register?error=${encodeMessage("El nombre del conductor es demasiado largo")}`);
   }
 
   if (!TRUCK_BRANDS.includes(model)) {
-    redirect(`/?error=${encodeMessage("Selecciona una marca valida")}`);
+    redirect(`/register?error=${encodeMessage("Selecciona una marca valida")}`);
   }
 
-  const validCommercialLines = COMMERCIAL_LINES_BY_BRAND[model] ?? DEFAULT_COMMERCIAL_LINES;
+  const validCommercialLines = COMMERCIAL_LINES_BY_BRAND[model as keyof typeof COMMERCIAL_LINES_BY_BRAND] ?? DEFAULT_COMMERCIAL_LINES;
 
   if (!validCommercialLines.includes(commercialLine)) {
-    redirect(`/?error=${encodeMessage("Selecciona una linea comercial valida para la marca elegida")}`);
+    redirect(`/register?error=${encodeMessage("Selecciona una linea comercial valida para la marca elegida")}`);
   }
 
-  const validCargoBodyTypes = CARGO_BODY_TYPES_BY_BRAND[model] ?? [];
+  const validCargoBodyTypes = CARGO_BODY_TYPES_BY_BRAND[model as keyof typeof CARGO_BODY_TYPES_BY_BRAND] ?? [];
 
   if (!validCargoBodyTypes.includes(cargoBodyType)) {
-    redirect(`/?error=${encodeMessage("Selecciona un tipo de carroceria valida para la marca elegida")}`);
+    redirect(`/register?error=${encodeMessage("Selecciona un tipo de carroceria valida para la marca elegida")}`);
   }
 
   const vehicleModel = `${model} ${commercialLine} - ${cargoBodyType}`;
@@ -251,112 +182,50 @@ async function registerVehicle(formData: FormData) {
     });
   } catch (e) {
     console.error("[registerVehicle] DB error:", e);
-    redirect(`/?error=${encodeMessage("No fue posible conectar con la base de datos")}`);
+    redirect(`/register?error=${encodeMessage("No fue posible conectar con la base de datos")}`);
   }
 
   redirect(`/register?ok=${encodeMessage("Usuario creado correctamente. Ahora inicia sesion")}`);
 }
 
-async function loginWithVehicle(formData: FormData) {
-  "use server";
-
-  const plate = normalizePlate(String(formData.get("plate") ?? ""));
-  const driverCc = String(formData.get("driverCc") ?? "").trim();
-
-  if (!plate || !driverCc) {
-    redirect(`/?error=${encodeMessage("Ingresa placa y cedula para continuar")}`);
-  }
-
-  if (!PLATE_REGEX.test(plate) || !DRIVER_CC_REGEX.test(driverCc)) {
-    redirect(`/?error=${encodeMessage("Revisa el formato de placa y cedula")}`);
-  }
-
-  let vehicle;
-
-  try {
-    vehicle = await prisma.vehicle.findFirst({
-      where: {
-        plate,
-        driverCc,
-      },
-      select: {
-        id: true,
-        plate: true,
-      },
-    });
-  } catch (e) {
-    console.error("[loginWithVehicle] DB error:", e);
-    redirect(`/?error=${encodeMessage("No fue posible conectar con la base de datos")}`);
-  }
-
-  if (!vehicle) {
-    redirect(`/?error=${encodeMessage("No encontramos un usuario con esa placa y cedula")}`);
-  }
-
-  await createVehicleSession({
-    vehicleId: vehicle.id,
-    plate: vehicle.plate,
-  });
-
-  redirect("/panel");
-}
-
-type HomeProps = {
+type RegisterProps = {
   searchParams: Promise<{
     error?: string;
     ok?: string;
   }>;
 };
 
-export default async function Home({ searchParams }: HomeProps) {
-  const session = await getVehicleSession();
-
-  if (session) {
-    redirect("/panel");
-  }
-
+export default async function RegisterPage({ searchParams }: RegisterProps) {
   const params = await searchParams;
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-4 py-8 sm:px-8 sm:py-12">
-      <section className="relative overflow-hidden rounded-3xl border border-line bg-panel p-6 shadow-sm sm:p-8 flex flex-col items-center">
-        <div className="pointer-events-none absolute -right-16 -top-20 h-60 w-60 rounded-full bg-accent/15 blur-2xl" />
-        <div className="relative z-10 mb-5 flex justify-center gap-3 w-full">
-          <Link
-            href="/admin/login"
-            className="btn-glass btn-glass-neutral px-5 py-2 text-sm font-semibold"
-          >
-            Admin
-          </Link>
-          <Link
-            href="/register"
-            className="btn-glass btn-glass-primary px-5 py-2 text-sm font-semibold"
-          >
-            Crear usuario
-          </Link>
-        </div>
-        <p className="text-sm uppercase tracking-[0.16em] text-accent-strong text-center">
-          Acceso de Conductores
-        </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl text-center">
-          Prevencion y mantenimiento seguro de flotas
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm text-slate-700 sm:text-base text-center">
-          Inicia sesion con placa y cedula. Si aun no tienes acceso, crea tu usuario en segundos.
-        </p>
-
-        <div className="w-full flex flex-col items-center">
-          <VehicleLoginForm action={loginWithVehicle} />
-        </div>
+      <div className="mb-4 flex justify-end">
+        <Link
+          href="/"
+          className="btn-glass btn-glass-primary px-4 py-2 text-sm font-semibold"
+        >
+          Iniciar sesion
+        </Link>
+      </div>
+      <section className="rounded-3xl border border-line bg-panel p-6 shadow-sm sm:p-8">
+        <h2 className="text-lg font-semibold">Crear usuario</h2>
+        <p className="mt-1 text-sm text-slate-600">Registra conductor, marca, línea y tipo de carrocería para habilitar su acceso al panel.</p>
+        <VehicleRegisterForm
+          action={registerVehicle}
+          brands={TRUCK_BRANDS}
+          commercialLinesByBrand={COMMERCIAL_LINES_BY_BRAND}
+          cargoBodyTypesByBrand={CARGO_BODY_TYPES_BY_BRAND}
+        />
 
         {params.error && (
-          <section className="mt-4 rounded-2xl border border-rose-300 bg-rose-50 p-4 text-sm text-rose-800 w-full">
+          <section className="mt-4 rounded-2xl border border-rose-300 bg-rose-50 p-4 text-sm text-rose-800">
             {params.error}
           </section>
         )}
 
         {params.ok && (
-          <section className="mt-4 rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-800 w-full">
+          <section className="mt-4 rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-800">
             {params.ok}
           </section>
         )}
